@@ -1,0 +1,31 @@
+{
+  "name": "crisp-plugin-export-chat",
+  "version": "1.0.0",
+  "description": "A Crisp plugin used to export the chat converastion an send it to the user.",
+  "main": "crisp.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon crisp.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/dinis07/crisp-plugin-export-chat.git"
+  },
+  "author": "Dinis Tavares",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dinis07/crisp-plugin-export-chat/issues"
+  },
+  "homepage": "https://github.com/dinis07/crisp-plugin-export-chat#readme",
+  "devDependencies": {
+    "eslint": "^7.32.0",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.1",
+    "nodemon": "^2.0.14"
+  },
+  "dependencies": {
+    "node-crisp-api": "^4.1.1"
+  }
+}

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/styles/main.css">
+  <script type="text/javascript" src="https://assets.crisp.chat/widget/javascripts/sdk.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      var _urlParams = new URLSearchParams(window.location.search);
+      console.log(_urlParams.get("isModal"));
+      if(_urlParams.get("isModal") === "true"){
+        console.log("this opened")
+        document.querySelector(".modal-wrapper").hidden = false;
+      };
+    });
+
+  </script>
+  <title>User Profile</title>
+</head>
+<body>
+  <div class="modal-wrapper" hidden="true">
+    <button onclick=`${$crisp.closeModal()}`> close modal </button>
+  </div>
+  <div class="wrapper">
+    <h1>Profile Page to be displayed here!</h1>
+    <p>Coming soon...</p>
+    <img src="/imgs/ralph.png" alt="">
+  </div>
+</body>
+</html>
