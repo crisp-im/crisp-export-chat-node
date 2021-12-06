@@ -1,12 +1,14 @@
-const Crisp = require("node-crisp-api");
-const fs    = require("fs");
-const https = require("https");
-const path  = require("path");
+const Crisp        = require("node-crisp-api");
+const https        = require("https");
+const path         = require("path");
+const fs           = require("fs");
+
 
 class ExportChat {
   constructor(pluginUrn, crispAPIIdentifier, crispAPIKey) {
     this.crispClient = new Crisp();
     this.websites    = new Map();
+    this.buckets     = new Map();
     
     this.pluginUrn          = pluginUrn;
     this.crispAPIIdentifier = crispAPIIdentifier;
@@ -15,21 +17,82 @@ class ExportChat {
     this._initPlugin();
   }
 
+  getConfigPage(websiteId, token, res){
+    if (token !== this.websites[websiteId].token) {
+      console.log(this.websites);
+      console.log(token);
+      console.error("Tokens does not match! Retry with a valid token.");
+
+      return;
+    }
+
+    return res.render("config/config", {
+      pageTitle : "Export Configuration", 
+      filename  : this.websites[websiteId].fileName,
+      websiteId : this.websites[websiteId].websiteId ? "checked" : "",
+      sessionId : this.websites[websiteId].sessionId ? "checked" : "",
+      nickname  : this.websites[websiteId].nickname ? "checked" : "",
+    });
+
+  }
+
+  updateFilenameForTranscript(websiteId, token, data) {
+    if (token !== this.websites[websiteId].token) {
+      console.log(this.websites);
+      console.log(token);
+      console.error("Tokens does not match! Retry with a valid token.");
+
+      return;
+    }
+
+    const settings = {
+      fileName   : data.fileName,
+      websiteId  : data.websiteId,
+      sessionId  : data.sessionId,
+      nickname   : data.nickname,
+      email      : data.email
+    };
+
+    this.crispClient.plugin.updateSubscriptionSettings(
+      websiteId,
+      this._pluginId,
+      settings
+    )
+      .then((res) => {
+        console.log(res);
+        this.websites[websiteId] = { 
+          token      : token,
+          fileName   : data.fileName,
+          websiteId  : data.websiteId,
+          sessionId  : data.sessionId,
+          nickname   : data.nickname,
+          email      : data.email,
+        };
+
+        console.log(
+          `Successfully updated plugin config for website ID: ${websiteId}`
+        );
+      })
+      .catch(error => {
+        console.error(error);
+      });
+  }
+
   getConversationBetween(website_id, session_id, data){
     const token           = data.token;
-    const vistor_nickname = data.visitorNickname;
-    const visitor_email   = data.visitorEmail;
-    const messages_to     = data.messagesTo;
-    let messages_from   = data.messagesFrom;
 
     if (token !== this.websites[website_id].token) {
       console.log(this.websites);
       console.log(token);
       console.error("Invalid token, pleaes try again with a valid token!");
+      return {
+        "error": true,
+        "reason": "Invalid token, pleaes try again with a valid token!",
+        "data": {}
+      };
 
-      return;
     }
-    if(!messages_from){
+    if(!data.messagesFrom){
       const message = `
         Please insert a valid time and date of when you would like to export 
         messages from. \n\n If you would like to export all messages in this 
@@ -38,49 +101,48 @@ class ExportChat {
 
       this._sendErrorNote(website_id, session_id, message);
 
-      return console.log("Action requires a 'message from' date!");
+      return {
+        "error": true,
+        "reason": "Action requires a 'message from' date!",
+        "data": {
+          "messageFrom": data.messagesFrom
+        }
+      };
     }
 
-    this._validateDateAndTime(website_id, session_id, messages_from)
-      .then(message_from_timestamp => {
-        messages_from = message_from_timestamp;
+    if(new Date(data.messagesFrom).getTime() < Number(data.created_at)-60000){
+      const message = `The ** "Messages From" **  date should not be set before this
+        conversation was created!\n\n Please enter a valid date!`;
+      return this._sendErrorNote(website_id, session_id, message);
+    }
 
-        if(messages_to){
-          return this._validateDateAndTime(website_id, session_id, messages_to);
+    this._validateDateAndTime(website_id, session_id, data.messagesFrom)
+      .then(message_from_timestamp => {
+        data.messagesFrom = message_from_timestamp;
+
+        if(data.messagesTo){
+          if(new Date(data.messagesTo).getTime() > Number(data.updated_at)){
+            const message = `The ** "Messages To" ** date should not be set after the 
+              last time this conversation was updated!\n\n Please enter a valid date!`;
+            return  this._sendErrorNote(website_id, session_id, message);
+          }
+          
+          return this._validateDateAndTime(
+            website_id, 
+            session_id, 
+            data.messagesTo
+          );
         }
       })
       .then(message_to_timestamp => {
-        return this._fetchMessagesInConversation(
-          website_id, 
-          session_id, 
-          vistor_nickname, 
-          visitor_email, 
-          messages_from, 
-          message_to_timestamp
-        );
-      })
-      .then(data => {
-        fs.writeFile(
-          `./tmp/transcript_${website_id}_${session_id}.txt`, 
-          data.fullconversationMessages, 
-
-          (err) =>{
-            err ? console.log(err): null;
-
-            return data;
-          });
-
-      })
-      .then(() => {
-        this._createUploadBucket(website_id, session_id);
+        data.messagesTo = message_to_timestamp;
+        this._fetchMessagesInConversation(website_id, session_id, data);
       })
       .catch(err => console.log(err));
   }
 
   getFullConversation(website_id, session_id, data){
     const token           = data.token;
-    const vistor_nickname = data.visitorNickname;
-    const visitor_email   = data.visitorEmail;
 
     if (token !== this.websites[website_id].token) {
       console.log(this.websites);
@@ -90,62 +152,45 @@ class ExportChat {
       return;
     }
 
-    this._fetchMessagesInConversation(
-      website_id, 
-      session_id, 
-      vistor_nickname, 
-      visitor_email
-    )
-      .then(data => {
-        fs.writeFile(
-          `${path.join(__dirname)}/tmp/transcript_${website_id}_${session_id}.txt`, 
-          data.fullconversationMessages, 
+    this._fetchMessagesInConversation(website_id, session_id, data);
 
-          (err) => {
-            err ? console.log(err): null;
-            
-            return data;
-          });
 
-      })
-      .then(() => {
-        this._createUploadBucket(website_id, session_id);
-      })
-      .catch(err => console.log(err));
   }
 
-  getConversationMetas(website_id, session_id, token, item_id, res){
-    if (token !== this.websites[website_id].token) {
+  convertTimestamp(website_id, data, res){
+    if (data.token !== this.websites[website_id].token) {
       console.log(this.websites);
-      console.log(token);
+      console.log(data.token);
       console.error("Invalid token, pleaes try again with a valid token!");
 
       return;
     }
 
-    this.crispClient.website.getConversation(website_id, session_id)
-      .then(conversation => {
-        /* eslint-disable indent */
-        switch (item_id){
-          case "session_created": {
-            res.send({ data: {value: `Created: ${new Date(conversation.created_at).toISOString().slice(0, 16).replace(/T/, " ")}`}});
-    
-            break;
-          }
-          case "session_updated": {
-            res.send({ data: {value: `Updated: ${new Date(conversation.updated_at).toISOString().slice(0, 16).replace(/T/, " ")}`}});
-    
-            break;
-          }
-          default: {
-            res.send({});
-          }
-        }
-        /* eslint-enable indent */
-      });
+    /* eslint-disable indent */
+    switch (data.item_id){
+      case "session_created": {
+        res.send({ data: {value: `Created: ${new Date(Number(data.created_at)).toISOString().slice(0, 16).replace(/T/, " ")}`}});
+
+        break;
+      }
+      case "session_updated": {
+        res.send({ data: {value: `Updated: ${new Date(Number(data.updated_at)).toISOString().slice(0, 16).replace(/T/, " ")}`}});
+
+        break;
+      }
+      default: {
+        res.send({});
+      }
+    }
+    /* eslint-enable indent */
   }
 
-  _fetchMessagesInConversation(website_id, session_id, vistor_nickname, visitor_email, message_from, message_to){
+  _fetchMessagesInConversation(website_id, session_id, data){
+    const visitor_nickname       = data.visitorNickname;
+    const visitor_email          = data.visitorEmail;
+    const message_to             = data.messagesTo;
+    let message_from             = data.messagesFrom;
+
     let toDate                   = Date.now();      
     let self                     = this;
     let fullconversationMessages = "";
@@ -156,60 +201,54 @@ class ExportChat {
       toDate = new Date(message_to).getTime();
     }
 
-    return new Promise((resolve) => {
-      (function getMessagePages(timestamp, lastMessageFrom){
-        self.crispClient.website.getMessagesInConversation(
-          website_id, 
-          session_id, 
-          timestamp
-        )
-          .then(messages => {
-            let currentMessages = "";
+    (function getMessagePages(timestamp, lastMessageFrom){
+      self.crispClient.website.getMessagesInConversation(
+        website_id, 
+        session_id, 
+        timestamp
+      )
+        .then(messages => {
+          let currentMessages = "";
+  
+          for(let message of messages){
+            const msgTimestamp = Number(message.timestamp);
+            const msgNickname  = message.user.nickname;
+            const msgFrom      = message.from;
+            const botName      = "Export Transcript Plugin";
 
-            if (messages.length === 0) {
-              let txtFileTitle = `Conversation with ${vistor_nickname}`;
-
-              if(visitor_email !== ""){
-                txtFileTitle = txtFileTitle.concat(`\nEmail: ${visitor_email}`);
-              } 
-
-              fullconversationMessages = txtFileTitle.concat(
-                "\n\n", 
-                fullconversationMessages
-              );
-
-              let data = {
-                fullconversationMessages: fullconversationMessages,
-                website_id: website_id,
-                session_id: session_id
-              };
-
-              return resolve(data);
+            let messageTime = new Date(msgTimestamp)
+              .toISOString()
+              .slice(0, 16)
+              .replace(/T/, " ");
+  
+            if(msgTimestamp < message_from || msgNickname === botName){
+  
+              continue;
             }
-            for(let message of messages){
-              let messageTime = new Date(message.timestamp)
-                .toISOString()
-                .slice(0, 16)
-                .replace(/T/, " ");
+            if(!lastMessageFrom){
+              let txt = `${msgNickname} (${lastMessageFrom}): `;
 
-              if(message.timestamp < message_from || message.user.nickname === "Export Transcript Plugin"){
+              lastMessageFrom = msgFrom;
+              currentMessages = currentMessages.concat(txt);
+            } 
+            if(msgFrom !== lastMessageFrom){
+              let txt = `${msgNickname} (${lastMessageFrom}): `;
 
-                continue;
+              lastMessageFrom = msgFrom;
+              currentMessages = currentMessages.concat("\n\n", txt);
+            }
+            switch(message.type) {
+            /* eslint-disable indent */
+              case "text": {
+                let txt = `[${messageTime}] ${message.content}`;
+                currentMessages = currentMessages.concat("\n", txt);
+  
+                break;
               }
-              if(!lastMessageFrom){
-                lastMessageFrom = message.from;
-                currentMessages = currentMessages.concat(`${message.user.nickname} (${lastMessageFrom}): `);
-              } 
-              if(message.from !== lastMessageFrom){
-                lastMessageFrom = message.from;
-                currentMessages = currentMessages.concat("\n\n", `${message.user.nickname} (${lastMessageFrom}): `);
-              }
-              if (message.type === "text"){
-                let messageToAppend = `[${messageTime}] ${message.content}`;
-                currentMessages = currentMessages.concat("\n", messageToAppend);
-              }
-              if(message.type === "picker"){
+              case "picker": {
+                let txt;
                 let selectedChoice = "Unselected answers:";
+                
                 for(let choice of message.content.choices){
                   if(choice.selected){
                     selectedChoice = choice.label;
@@ -220,41 +259,121 @@ class ExportChat {
                     selectedChoice = selectedChoice.concat(` ${i + 1}: `, `'${choice.label}'`);
                   }  
                 }
-                currentMessages = currentMessages.concat("\n", `[${messageTime}] Q: "${message.content.text}" A: "${selectedChoice}"`);
-              }
-              if(message.type === "field"){
-                let fieldAnswer = message.content.value;
+                
+                txt = `[${messageTime}] Q: "${message.content.text}" A: "${selectedChoice}"`;
 
+                currentMessages = currentMessages.concat("\n", txt);
+                
+                break;
+              }
+              case "field": {
+                let txt;
+                let fieldAnswer = message.content.value;
+  
                 !fieldAnswer ? fieldAnswer = "[No input from user]": null;
 
-                currentMessages = currentMessages.concat("\n", `[${messageTime}] Field Input message - Q: "${message.content.text}" A: "${fieldAnswer}"`);
+                txt = `[${messageTime}] Field Input message - Q: 
+                  "${message.content.text}" A: "${fieldAnswer}"`;
+  
+                currentMessages = currentMessages.concat("\n", txt);
+  
+                break;
               }
-              if(message.type === "note"){
-                currentMessages = currentMessages.concat("\n", `[${messageTime}] PRIVATE NOTE: ${message.content}`);
+              case "note": {
+                let txt = `[${messageTime}] PRIVATE NOTE: ${message.content}`;
+
+                currentMessages = currentMessages.concat("\n", txt);
+  
+                break;
               }
-              if(message.type === "animation"){
-                currentMessages = currentMessages.concat("\n", `[${messageTime}] Animation file: ${message.content.url}`);
+              case "animation": {
+                let txt = `[${messageTime}] Animation file: ${message.content.url}`;
+
+                currentMessages = currentMessages.concat("\n", txt);
+  
+                break;
               }
-              if(message.type === "audio"){
-                currentMessages = currentMessages.concat("\n", `[${messageTime}] Audio file: ${message.content.url}, Message length: ${message.content.duration} seconds`);
+              case "audio": {
+                let txt = `[${messageTime}] Audio file: ${message.content.url}, 
+                  Message length: ${message.content.duration} seconds`;
+
+                currentMessages = currentMessages.concat("\n", txt);
+  
+                break;
               }
-              if(message.type === "file"){
-                currentMessages = currentMessages.concat("\n", `[${messageTime}] File sent: ${message.content.url}, File name: "${message.content.name}"", File type: "${message.content.type}"`);
+              case "file": {
+                let txt = `[${messageTime}] File sent: ${message.content.url}, 
+                  File name: "${message.content.name}"", File type: "${message.content.type}"`;
+
+                currentMessages = currentMessages.concat("\n", txt);
+  
+                break;
               }
-              if(message.type === "event"){
-                currentMessages = currentMessages.concat("\n", `[${messageTime}] Event occured: "${message.content.namespace}"`);
+              case "event": {
+                let txt = `[${messageTime}] Event occured: "${message.content.namespace}"`;
+                currentMessages = currentMessages.concat("\n", txt);
               }
+            /* eslint-enable indent */
             }
+          }
+  
+          fullconversationMessages = currentMessages.concat(fullconversationMessages);
 
-            fullconversationMessages = currentMessages.concat(fullconversationMessages);
-
-
-            getMessagePages(messages[0].timestamp, lastMessageFrom);
+          if(messages.length !== 40){
+            let pathParam1 = "";
+            let pathParam2 = "";
+            let pathParam3 = "";
+            let pathParam4 = "";
+            let fullPath   = "";
+            let   txtFileTitle = `Conversation with ${visitor_nickname}`;
+            const fileName = self.websites[website_id].fileName;
+  
+            if(visitor_email !== ""){
+              txtFileTitle = txtFileTitle.concat(`\nEmail: ${visitor_email}`);
+            } 
+  
+            fullconversationMessages = txtFileTitle.concat(
+              "\n\n", 
+              fullconversationMessages
+            );
             
-          })
-          .catch(err => console.log(err));
-      })(toDate);
-    });
+
+            if(self.websites[website_id].websiteId){
+              pathParam1 = `_${website_id}`;
+            } 
+            if(self.websites[website_id].sessionId){
+              pathParam2 = `_${session_id}`;
+            } 
+            if(self.websites[website_id].nickname){
+              pathParam3 = `_${visitor_nickname}`;
+            } 
+            if(self.websites[website_id].email && visitor_email){
+              pathParam4 = `_${visitor_email}`;
+            } 
+
+            fullPath = `${fileName}${pathParam1}${pathParam2}${pathParam3}${pathParam4}`;
+  
+            return fs.promises.writeFile(
+              `${path.join(__dirname)}/tmp/${fullPath}.txt`, 
+              fullconversationMessages, 
+        
+              (err) => {
+                err ? console.log(err): null;
+                
+                return data;
+              })
+              .then(() => {
+                self._createUploadBucket(website_id, session_id, fullPath);
+              })
+              .catch(err => console.log(err));
+          }
+
+          getMessagePages(messages[0].timestamp, lastMessageFrom);
+          
+        })
+        .catch(err => console.log(err));
+    })(toDate);
+  
   }
 
   _validateDateAndTime(website_id, session_id, time){
@@ -268,33 +387,39 @@ class ExportChat {
           * **yyyy-mm-dd** eg. "2016-11-25"
           * **yyyy-mm-dd hh:mm** eg. "2016-11-25 12:10" \n\n
         `;
-        
-        if(time.length === 10){
-          const dateRegYear = /[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])/;
-    
-          if(!time.match(dateRegYear)){
+
+        /* eslint-disable indent */
+        switch(time.length){
+          case 10: {
+            const dateRegYear = /[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])/;
+      
+            if(!time.match(dateRegYear)){
+              this._sendErrorNote(website_id, session_id, message);
+      
+              return reject("Date format must be 'yyyy-mm-dd'");
+            }
+      
+            return resolve(time);
+          }
+          case 16: {
+            const dateRegYearDate = /[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1]) (2[0-3]|[01][0-9]):[0-5][0-9]/;
+      
+            if(!time.match(dateRegYearDate)){
+              this._sendErrorNote(website_id, session_id, message);
+      
+              return reject("Date and time format must be 'yyyy-mm-dd hh:mm' ");
+            }
+      
+            return resolve(time);
+          }
+          default: {
             this._sendErrorNote(website_id, session_id, message);
     
-            return reject("Date format must be 'yyyy-mm-dd'");
+            return reject("Date format must be a length of 10 or 16 characters only!");
           }
-    
-          return resolve(time);
+          
         }
-        if(time.length === 16){
-          const dateRegYearDate = /[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1]) (2[0-3]|[01][0-9]):[0-5][0-9]/;
-    
-          if(!time.match(dateRegYearDate)){
-            this._sendErrorNote(website_id, session_id, message);
-    
-            return reject("Date and time format must be 'yyyy-mm-dd hh:mm' ");
-          }
-    
-          return resolve(time);
-        }
-
-        this._sendErrorNote(website_id, session_id, message);
-
-        return reject("Date format must be a length of 10 or 16 characters only!");
+        /* eslint-enable indent */
       }
     );
   }
@@ -316,15 +441,19 @@ class ExportChat {
       .catch(err => console.log(err));
   }
 
-  _createUploadBucket(website_id, session_id){
+  _createUploadBucket(website_id, session_id, fileName){
+    const bucket_id = `transcript_${website_id}_${session_id}`;
+
+    this.buckets.set(bucket_id, fileName);
+
     let data = {
       "namespace" : "upload",
       "from"      : "plugin",
       "identifier": this._pluginId,
-      "id"        : `transcript_${website_id}_${session_id}`,
+      "id"        : bucket_id,
   
       "file"      : {
-        "name"      : `transcript_${website_id}_${session_id}.txt`,
+        "name"      : `${fileName}.txt`,
         "type"      : "text/plain"
       }
     };
@@ -360,11 +489,21 @@ class ExportChat {
           );
         } else {
           for(const website of websites){
-            this.websites[website.website_id] = {
-              token: website.token,
-            };
+            const file_name = website.settings.fileName || "transcript";
+            const website_id = website.settings.websiteId;
+            const session_id = website.settings.sessionId;
+            const nickname = website.settings.nickname;
+            const email = website.settings.email;
 
-            numWebsites++;
+          
+            this.websites[website.website_id] = {
+              token      : website.token,
+              fileName   : file_name, 
+              websiteId  : website_id,
+              sessionId  : session_id,
+              nickname   : nickname,
+              email      : email
+            };
           }
 
           console.log(`Retrieved ${numWebsites} websites.`);
@@ -384,9 +523,10 @@ class ExportChat {
 
     this.crispClient.on("bucket:url:upload:generated", (bucket) => {
 
+      const file_name      = this.buckets.get(bucket.id);
       const website_id     = bucket.id.slice(11, 47 );
       const session_id     = bucket.id.slice(48, 92);
-      const readableStream = fs.createReadStream(`${__dirname}/tmp/${bucket.id}.txt`);
+      const readableStream = fs.createReadStream(`${__dirname}/tmp/${file_name}.txt`);
 
       readableStream.on("data", (chunk) => {
         const options = {
@@ -416,7 +556,7 @@ class ExportChat {
             "from"    : "operator",
             "origin"  : "chat",
             "content" : {
-              "name"    : `${session_id}.txt`,
+              "name"    : `${file_name}.txt`,
               "url"     : bucket.url.resource,
               "type"    : "text/plain"
             },
@@ -434,11 +574,16 @@ class ExportChat {
           )
             .then(() => {
               fs.unlink(
-                `${__dirname}/tmp/${bucket.id}.txt`, 
+                `${__dirname}/tmp/${file_name}.txt`, 
                 
                 (res) => {
-                  console.log(`Deleted: ${res}`);
-                });
+                  if(res){
+                    console.log(`Deleted: ${res} `);
+                  }
+                }
+              );
+              
+              this.buckets.delete(bucket.id);
 
             })
             .catch(err => {

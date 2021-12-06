@@ -1,0 +1,61 @@
+<%- include("../includes/head.ejs") %> 
+
+<head>
+    <title>Setup your plugin</title>
+
+    <script>
+        function sendConfig() {
+            var _urlParams = new URLSearchParams(window.location.search),
+                _filename = document.getElementById("filename").value;
+                _websiteId = document.getElementById("websiteId").checked;
+                _sessionId = document.getElementById("sessionId").checked;
+                _nickname = document.getElementById("nickname").checked;
+
+                console.log(window.location.search);
+            fetch(window.location.origin + "/config/update", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    "website_id": _urlParams.get("website_id"),
+                    "token"     : _urlParams.get("token"),
+                    "fileName"  : _filename,
+                    "websiteId" : _websiteId,
+                    "sessionId" : _sessionId,
+                    "nickname"  : _nickname
+                })
+            }).then(() => {
+                console.log("worked");
+            }).catch(error => {
+                console.error(error);
+            });
+        }
+    </script>
+</head>
+
+<body>
+
+    <div class="config-wrapper">
+      <h1> Configure File name here: </h1>
+
+      
+        <p>Filename:
+            <input type="text" name="filename" id="filename" value="<%= filename %>">
+            Website Id:
+            <input type="checkbox" name="websiteId" id="websiteId" <%= websiteId %>>
+            Session Id:
+            <input type="checkbox" name="sessionId" id="sessionId" <%= sessionId %>>
+            Nickname:
+            <input type="checkbox" name="nickname" id="nickname" <%= nickname %>>
+      
+            <button onclick="sendConfig()">Save configuration</button>
+        </p>
+
+      <!-- <p class="filename-example">File name will look like: <%= filename %>.txt</p> -->
+
+    </div>
+
+</body>
+
+<%- include("../includes/footer.ejs") %>

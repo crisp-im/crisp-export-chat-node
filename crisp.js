@@ -1,13 +1,11 @@
 const express     = require("express");
 const ExportChat  = require("./export_chat");
 const bodyParser  = require("body-parser");
-const fs          = require("fs");
 const path        = require("path");
 
 const pluginUrn          = "";
 const crispAPIIdentifier = "";
 const crispAPIKey        = "";
-
 
 const app   = express();
 const port  = 1234;
@@ -21,15 +19,20 @@ const plugin = new ExportChat(
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));
 
+app.set("view engine", "ejs");
+
 const handleDataFetchAction = (body, res) => {
   const websiteId = body.origin.website_id;
-  const sessionId = body.origin.session_id;
-  const token     = body.origin.token;
-  const item_id   = body.widget.item_id;
+  
+  const data = {
+    sessionId  : body.origin.session_id,
+    token      : body.origin.token,
+    item_id    : body.widget.item_id,
+    created_at : body.payload.data.created_at,
+    updated_at : body.payload.data.updated_at
+  };
 
-
-  plugin.getConversationMetas(websiteId, sessionId, token, item_id, res);
-
+  plugin.convertTimestamp(websiteId, data, res);
 };
 
 const handleSubmitButtonAction = (body, res) => {
@@ -41,7 +44,9 @@ const handleSubmitButtonAction = (body, res) => {
     visitorNickname : body.payload.data.visitor_nickname,
     visitorEmail    : body.payload.data.visitor_email,
     messagesFrom    : body.payload.value.from,
-    messagesTo      : body.payload.value.to
+    messagesTo      : body.payload.value.to,
+    created_at      : body.payload.data.created_at,
+    updated_at      : body.payload.data.updated_at,
   };
   
   plugin.getConversationBetween(website_id, session_id, data);
@@ -85,9 +90,31 @@ const handleButtonAction = (body, res) => {
 
 };
 
+app.use("/config/update", ((req, res) => {
+  const websiteId = req.body.website_id;
+  const token = req.body.token;
+  const data = {
+    fileName: req.body.fileName,
+    websiteId : req.body.websiteId,
+    sessionId : req.body.sessionId,
+    nickname  : req.body.nickname,
+    email     : req.body.email,
+  };
+
+  plugin.updateFilenameForTranscript(websiteId, token, data);
+
+  res.send({});
+}));
+
+// need to complete to fetch setting config first! 
+app.get("/config", (req, res) => {
+  plugin.getConfigPage(req.query.website_id, req.query.token, res);
+});
+
 app.get("/profile", (req, res) => {
-  res.writeHead(200, { "content-type": "text/html" });
-  fs.createReadStream("public/index.htm").pipe(res);
+  res.render("admin/index", {
+    pageTitle: "User Profile"
+  });
 });
 
 app.post("/export", (req, res) => {

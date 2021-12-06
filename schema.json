@@ -1,0 +1,18 @@
+{
+  "$id": "crisp:service:api/_schema/plugin#urn:my.account:pluginname:0",
+  "type": "object",
+  "properties": {
+    "fileName": {
+      "type": "string"
+    },
+    "websiteId": {
+      "type": "boolean"
+    },
+    "sessionId": {
+      "type": "boolean"
+    },
+    "nickname": {
+      "type": "boolean"
+    }
+  }
+}
