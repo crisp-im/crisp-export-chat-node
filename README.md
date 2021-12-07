@@ -11,12 +11,12 @@ In order to use widgets, you will need to publish your plugin, and you will need
 ### In the Crisp Marketplace
 
 1. Create an account on the [Crisp Marketplace](https://marketplace.crisp.chat)
-2. Create a plugin in the Maketplace. (Add the plugin URN in `./app.js` > `pluginUrn` URN example: `"urn:my.account:pluginname:0"`)
-3. Give you plugin a name and description.
+2. Create a plugin in the Marketplace. (Add the plugin URN in `./app.js` > `pluginUrn` URN example: `"urn:my.account:pluginname:0"`)
+3. Give your plugin a name and description.
 4. In the Marketplace go to the **Tokens** tab of your plugin.
 5. Select **Ask a Production Token** and define the scopes you will need. Please add a description as to why you need these scopes or they will be rejected. The tokens you will need for the project are:
   * **Namespace**: `bucket:url`                     **Description**: You will need this to create upload links to upload and send files in Crisp.
-  * **Namespace**: `website:conversation:sessions`  **Description**: To get the session `created_at` and `updated_at` dates, along with the users nicnkname and email.
+  * **Namespace**: `website:conversation:sessions`  **Description**: To get the session `created_at` and `updated_at` dates, along with the user's nickname and email.
   * **Namespace**: `website:conversation:messages`  **Description**: To get all messages from a conversation, and send the transcript text file to the conversation. 
   Please note: you can see all required scopes for each individual API route you will use in the [REST API Documentation](https://docs.crisp.chat/references/rest-api/v1/)
 6. Add your plugin production tokens in the correct fields (Located in `./app.js`: 
@@ -27,7 +27,7 @@ In order to use widgets, you will need to publish your plugin, and you will need
   * A URL to your website under **Support** in the **Features & Links** section. (These are required inorder to publish your plugin.)
   If you do not have a website yet, you can add `mailto:email@email.com` using your email so that users can contact you if they have any issues.
 8. Go to the **Settings** tab of your plugin:
-  * Add plugin URLS. For this example we use [ngrok](https://ngrok.com), it will help you bind a public HTTPS addresses to your local server.
+  * Add plugin URLS. For this example we use [ngrok](https://ngrok.com), it will help you bind public HTTPS addresses to your local server.
     * Callback example URL : `https://698e-79-168-37-128.ngrok.io/success`
     * Settings example URL : `https://698e-79-168-37-128.ngrok.io/config`
     * Action example URL   : `https://698e-79-168-37-128.ngrok.io/export`
