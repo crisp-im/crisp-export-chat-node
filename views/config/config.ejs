@@ -1,61 +1,103 @@
-<%- include("../includes/head.ejs") %> 
+<%- include("../includes/head.ejs") %>
 
-<head>
-    <title>Setup your plugin</title>
-
-    <script>
-        function sendConfig() {
-            var _urlParams = new URLSearchParams(window.location.search),
-                _filename = document.getElementById("filename").value;
-                _websiteId = document.getElementById("websiteId").checked;
-                _sessionId = document.getElementById("sessionId").checked;
-                _nickname = document.getElementById("nickname").checked;
+    <head>
+        <!-- <link rel="stylesheet" href="/styles/config.css"> -->
+        <script>
+            function sendConfig() {
+                var _urlParams = new URLSearchParams(window.location.search);
+                _filename = document.getElementById("filename");
+                _fnWebsiteId = document.getElementById("fnWebsiteId");
+                _fnSessionId = document.getElementById("fnSessionId");
+                _fnNickname = document.getElementById("fnNickname");
 
                 console.log(window.location.search);
-            fetch(window.location.origin + "/config/update", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    "website_id": _urlParams.get("website_id"),
-                    "token"     : _urlParams.get("token"),
-                    "fileName"  : _filename,
-                    "websiteId" : _websiteId,
-                    "sessionId" : _sessionId,
-                    "nickname"  : _nickname
-                })
-            }).then(() => {
-                console.log("worked");
-            }).catch(error => {
-                console.error(error);
+                fetch(window.location.origin + "/config/update", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        "website_id": _urlParams.get("website_id"),
+                        "token": _urlParams.get("token"),
+                        "fileName": _filename.value,
+                        "fnWebsiteId": _fnWebsiteId.checked,
+                        "fnSessionId": _fnSessionId.checked,
+                        "fnNickname": _fnNickname.checked
+                    })
+                }).then(() => {
+                    console.log("worked");
+                    let success = document.querySelector("#success")
+                    success.hidden = false
+                    setTimeout(() => {
+                        success.hidden = true
+                    }, 2000);
+                }).catch(error => {
+                    console.error(error);
+                });
+            }
+            document.addEventListener("DOMContentLoaded", function () {
+                var _urlParams = new URLSearchParams(window.location.search);
+                _filename = document.getElementById("filename");
+                _fnWebsiteId = document.getElementById("fnWebsiteId");
+                _fnSessionId = document.getElementById("fnSessionId");
+                _fnNickname = document.getElementById("fnNickname");
+                _websiteId = _urlParams.get("website_id");
+                let example = document.querySelector(".filename-example")
+
+                function handleFilename() {
+                    let updatedFilename = _filename.value;
+
+                    if (_fnWebsiteId.checked) {
+                        updatedFilename = `${updatedFilename}_${_websiteId}`;
+                    }
+                    if (_fnSessionId.checked) {
+                        updatedFilename = `${updatedFilename}_session_bbf82712-2602-468e-9c51-af054aaee873`;
+                    }
+                    if (_fnNickname.checked) {
+                        updatedFilename = `${updatedFilename}_John Doe`;
+                    }
+                    example.innerHTML = `${updatedFilename}.txt`;
+                }
+                _filename.addEventListener("keyup", handleFilename);
+                _fnWebsiteId.addEventListener("click", handleFilename);
+                _fnSessionId.addEventListener("click", handleFilename);
+                _fnNickname.addEventListener("click", handleFilename);
+
             });
-        }
-    </script>
-</head>
+        </script>
+    </head>
 
-<body>
+    <body>
 
-    <div class="config-wrapper">
-      <h1> Configure File name here: </h1>
+        <div class="config-wrapper">
+            <h1> Configure File name here: </h1>
 
-      
-        <p>Filename:
-            <input type="text" name="filename" id="filename" value="<%= filename %>">
-            Website Id:
-            <input type="checkbox" name="websiteId" id="websiteId" <%= websiteId %>>
-            Session Id:
-            <input type="checkbox" name="sessionId" id="sessionId" <%= sessionId %>>
-            Nickname:
-            <input type="checkbox" name="nickname" id="nickname" <%= nickname %>>
-      
+            <p>Filename:
+                <input type="text" name="filename" id="filename" value="<%= filename %>" max="30">
+                
+            </p>
+            <p>
+                Include Website Id:
+                <input type="checkbox" name="websiteId" id="fnWebsiteId" <%=fnWebsiteId %>>
+            </p>
+            <p>
+                Include Session Id:
+                <input type="checkbox" name="sessionId" id="fnSessionId" <%=fnSessionId %>>
+            </p>
+            <p>
+                Include Nickname:
+                <input type="checkbox" name="nickname" id="fnNickname" <%=fnNickname %>>
+            </p>
             <button onclick="sendConfig()">Save configuration</button>
-        </p>
 
-      <!-- <p class="filename-example">File name will look like: <%= filename %>.txt</p> -->
+            
+            <p><b>Example:</b> <span class="filename-example"> 
+                <%= fnExample %>.txt
+                </span>
+            </p>
+        </div>
+        
+        <p id="success" hidden=""> Settings Saved! </p>
+    </body>
 
-    </div>
-
-</body>
-
-<%- include("../includes/footer.ejs") %>
+    <%- include("../includes/footer.ejs") %>

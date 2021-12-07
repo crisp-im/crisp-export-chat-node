@@ -5,7 +5,7 @@
   "main": "crisp.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon crisp.js"
+    "start": "nodemon app.js"
   },
   "repository": {
     "type": "git",

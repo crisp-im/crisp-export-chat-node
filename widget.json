@@ -1,0 +1,162 @@
+{
+	"version": "1.0",
+	"sections": [
+		{
+			"id": "information",
+			"title": "Information",
+			"items": [
+				{
+					"id": "conversation-date-info",
+					"type": "data",
+					"value": {
+						"label": "Conversation Creation and Updated Dates",
+						"value": "Creation and Updated Dates",
+						"editable": false,
+						"immediate": true,
+						"group": "conversation-data",
+						"icon": "info"
+					}
+				},
+				{
+					"id": "session_created",
+					"type": "data",
+					"value": {
+						"label": "Conversation Created",
+						"value": "",
+						"editable": false,
+						"immediate": true,
+						"group": "conversation-data",
+						"icon": "clock",
+						"data": {
+							"created_at": "{conversation.created_at}"
+						}
+					}
+				},
+				{
+					"id": "session_updated",
+					"type": "data",
+					"value": {
+						"label": "Conversation Updated",
+						"value": "",
+						"editable": false,
+						"immediate": true,
+						"group": "conversation-data",
+						"icon": "clock",
+						"data": {
+							"updated_at": "{conversation.updated_at}"
+						}
+					}
+				},
+				{
+					"id": "open_contact",
+					"type": "button",
+					"value": {
+						"type": "modal",
+						"label": "Open Profile",
+						"url": "https://698e-79-168-37-128.ngrok.io/profile",
+						"color": "blue",
+						"size": "wide",
+						"controls": false,
+						"data": {
+							"people_id": "{conversation.people_id}",
+							"email": "{conversation.meta.email}",
+							"isModal": "true"
+						}
+					}
+				},
+				{
+					"id": "open_contact_new_tab",
+					"type": "button",
+					"value": {
+						"type": "link",
+						"label": "Open link to Profile",
+						"url": "https://698e-79-168-37-128.ngrok.io/profile",
+						"color": "blue",
+						"data": {
+							"people_id": "{conversation.people_id}",
+							"email": "{conversation.meta.email}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"id": "actions",
+			"title": "Actions",
+			"items": [
+				{
+					"id": "insert-date-info",
+					"type": "data",
+					"value": {
+						"label": "Messages From and To dates",
+						"value": "Insert Dates Below",
+						"editable": false,
+						"immediate": true,
+						"group": "get_messages_between",
+						"icon": "info"
+					}
+				},
+				{
+					"id": "from",
+					"type": "data",
+					"value": {
+						"label": "Messages From",
+						"placeholder": "yyyy/mm/dd (hh:mm)",
+						"editable": true,
+						"immediate": false,
+						"group": "get_messages_between",
+						"icon": "clock"
+					}
+				},
+				{
+					"id": "to",
+					"type": "data",
+					"value": {
+						"label": "Messages To",
+						"placeholder": "yyyy/mm/dd (hh:mm)",
+						"editable": true,
+						"immediate": false,
+						"group": "get_messages_between",
+						"icon": "clock"
+					}
+				},
+				{
+					"id": "submit-get-messages",
+					"type": "button",
+					"value": {
+						"type": "submit",
+						"label": "Send Messages for selected dates",
+						"color": "green",
+						"group": "get_messages_between",
+						"data": {
+							"operatror_id": "{operator.user_id}",
+							"operator_firstName": "{operator.first_name}",
+							"visitor_email": "{conversation.meta.email}",
+							"visitor_nickname": "{conversation.meta.nickname}",
+							"conversation_messages": "{conversation.messages}",
+							"created_at": "{conversation.created_at}",
+							"updated_at": "{conversation.updated_at}"
+						}
+					}
+				},
+				{
+					"id": "export-now",
+					"type": "button",
+					"value": {
+						"type": "hook",
+						"label": "Send Entire Conversation",
+						"color": "black",
+						"group": "get-messages",
+						"data": {
+							"operatror_id": "{operator.user_id}",
+							"operator_firstName": "{operator.first_name}",
+							"visitor_email": "{conversation.meta.email}",
+							"visitor_nickname": "{conversation.meta.nickname}",
+							"conversation_messages": "{conversation.messages}"
+						}
+					}
+				}
+			]
+		}
+	]
+}

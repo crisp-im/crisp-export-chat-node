@@ -18,55 +18,60 @@ class ExportChat {
   }
 
   getConfigPage(websiteId, token, res){
-    if (token !== this.websites[websiteId].token) {
-      console.log(this.websites);
-      console.log(token);
-      console.error("Tokens does not match! Retry with a valid token.");
+    this._validateRequest(websiteId, token)
+      .then(() => {
+        // fn = filename 
+        let filename    = this.websites[websiteId].fileName;
+        let fnWebsiteId = this.websites[websiteId].fnWebsiteId ? "checked" : "";
+        let fnSessionId = this.websites[websiteId].fnSessionId ? "checked" : "";
+        let fnNickname  = this.websites[websiteId].fnNickname ? "checked" : "";
+        let fnExample   = filename;
 
-      return;
-    }
-
-    return res.render("config/config", {
-      pageTitle : "Export Configuration", 
-      filename  : this.websites[websiteId].fileName,
-      websiteId : this.websites[websiteId].websiteId ? "checked" : "",
-      sessionId : this.websites[websiteId].sessionId ? "checked" : "",
-      nickname  : this.websites[websiteId].nickname ? "checked" : "",
-    });
+        if(fnWebsiteId === "checked"){
+          fnExample = `${fnExample}_${websiteId}`;
+        }
+        if(fnSessionId === "checked"){
+          fnExample = `${fnExample}_session_bbf82712-2602-468e-9c51-af054aaee873`;
+        }
+        if(fnNickname === "checked"){
+          fnExample = `${fnExample}_John Doe`;
+        }
+    
+        return res.render("config/config", {
+          pageTitle   : "Export Configuration", 
+          filename    : filename,
+          fnWebsiteId : fnWebsiteId,
+          fnSessionId : fnSessionId,
+          fnNickname  : fnNickname,
+          fnExample   : fnExample
+        });
+      })
+      .catch(err => console.log(err));
 
   }
 
   updateFilenameForTranscript(websiteId, token, data) {
-    if (token !== this.websites[websiteId].token) {
-      console.log(this.websites);
-      console.log(token);
-      console.error("Tokens does not match! Retry with a valid token.");
-
-      return;
-    }
-
-    const settings = {
-      fileName   : data.fileName,
-      websiteId  : data.websiteId,
-      sessionId  : data.sessionId,
-      nickname   : data.nickname,
-      email      : data.email
-    };
-
-    this.crispClient.plugin.updateSubscriptionSettings(
-      websiteId,
-      this._pluginId,
-      settings
-    )
-      .then((res) => {
-        console.log(res);
+    this._validateRequest(websiteId, token)
+      .then(() => {
+        const settings = {
+          fileName   : data.fileName,
+          fnWebsiteId  : data.fnWebsiteId,
+          fnSessionId  : data.fnSessionId,
+          fnNickname   : data.fnNickname,
+        };
+        this.crispClient.plugin.updateSubscriptionSettings(
+          websiteId,
+          this._pluginId,
+          settings
+        );
+      })
+      .then(() => {
         this.websites[websiteId] = { 
           token      : token,
           fileName   : data.fileName,
-          websiteId  : data.websiteId,
-          sessionId  : data.sessionId,
-          nickname   : data.nickname,
-          email      : data.email,
+          fnWebsiteId  : data.fnWebsiteId,
+          fnSessionId  : data.fnSessionId,
+          fnNickname   : data.fnNickname,
         };
 
         console.log(
@@ -81,51 +86,41 @@ class ExportChat {
   getConversationBetween(website_id, session_id, data){
     const token           = data.token;
 
-    if (token !== this.websites[website_id].token) {
-      console.log(this.websites);
-      console.log(token);
-      console.error("Invalid token, pleaes try again with a valid token!");
-      return {
-        "error": true,
-        "reason": "Invalid token, pleaes try again with a valid token!",
-        "data": {}
-      };
-
-    }
-    if(!data.messagesFrom){
-      const message = `
-        Please insert a valid time and date of when you would like to export 
-        messages from. \n\n If you would like to export all messages in this 
-        Conversation, please select **"Send Entire Conversation"** . 
-        `;
-
-      this._sendErrorNote(website_id, session_id, message);
-
-      return {
-        "error": true,
-        "reason": "Action requires a 'message from' date!",
-        "data": {
-          "messageFrom": data.messagesFrom
+    this._validateRequest(website_id, token)
+      .then(() => {
+        if(!data.messagesFrom){
+          const message = `
+            Please insert a valid time and date of when you would like to export 
+            messages from. \n\n If you would like to export all messages in this 
+            Conversation, please select **"Send Entire Conversation"** . 
+            `;
+    
+          this._sendErrorNote(website_id, session_id, message);
+    
+          return {
+            "error": true,
+            "reason": "Action requires a 'message from' date!",
+            "data": {
+              "messageFrom": data.messagesFrom
+            }
+          };
         }
-      };
-    }
-
-    if(new Date(data.messagesFrom).getTime() < Number(data.created_at)-60000){
-      const message = `The ** "Messages From" **  date should not be set before this
-        conversation was created!\n\n Please enter a valid date!`;
-      return this._sendErrorNote(website_id, session_id, message);
-    }
-
-    this._validateDateAndTime(website_id, session_id, data.messagesFrom)
+        if(new Date(data.messagesFrom).getTime() < Number(data.created_at)-60000){
+          const message = `The ** "Messages From" **  date should not be set before this
+            conversation was created!\n\n Please enter a valid date!`;
+          return this._sendErrorNote(website_id, session_id, message);
+        }
+        return this._validateDateAndTime(website_id, session_id, data.messagesFrom);
+      })
       .then(message_from_timestamp => {
         data.messagesFrom = message_from_timestamp;
 
         if(data.messagesTo){
-          if(new Date(data.messagesTo).getTime() > Number(data.updated_at)){
-            const message = `The ** "Messages To" ** date should not be set after the 
-              last time this conversation was updated!\n\n Please enter a valid date!`;
-            return  this._sendErrorNote(website_id, session_id, message);
-          }
+          // if(new Date(data.messagesTo).getTime() > Number(data.updated_at)){
+          //   const message = `The ** "Messages To" ** date should not be set after the 
+          //     last time this conversation was updated!\n\n Please enter a valid date!`;
+          //   return this._sendErrorNote(website_id, session_id, message);
+          // }
           
           return this._validateDateAndTime(
             website_id, 
@@ -144,45 +139,51 @@ class ExportChat {
   getFullConversation(website_id, session_id, data){
     const token           = data.token;
 
-    if (token !== this.websites[website_id].token) {
-      console.log(this.websites);
-      console.log(token);
-      console.error("Invalid token, pleaes try again with a valid token!");
-
-      return;
-    }
-
-    this._fetchMessagesInConversation(website_id, session_id, data);
-
-
+    this._validateRequest(website_id, token)
+      .then(() => {
+        this._fetchMessagesInConversation(website_id, session_id, data);
+      })
+      .catch(err => {
+        console.log(err);
+      });
   }
 
   convertTimestamp(website_id, data, res){
-    if (data.token !== this.websites[website_id].token) {
-      console.log(this.websites);
-      console.log(data.token);
-      console.error("Invalid token, pleaes try again with a valid token!");
+    this._validateRequest(website_id, data.token)
+      .then(() => {
+        /* eslint-disable indent */
+        switch (data.item_id){
+          case "session_created": {
+            res.send({ 
+              data: {
+                value: `Created: ${new Date(Number(data.created_at))
+                  .toISOString()
+                  .slice(0, 16)
+                  .replace(/T/, " ")}`
+              }
+            });
 
-      return;
-    }
-
-    /* eslint-disable indent */
-    switch (data.item_id){
-      case "session_created": {
-        res.send({ data: {value: `Created: ${new Date(Number(data.created_at)).toISOString().slice(0, 16).replace(/T/, " ")}`}});
-
-        break;
-      }
-      case "session_updated": {
-        res.send({ data: {value: `Updated: ${new Date(Number(data.updated_at)).toISOString().slice(0, 16).replace(/T/, " ")}`}});
-
-        break;
-      }
-      default: {
-        res.send({});
-      }
-    }
-    /* eslint-enable indent */
+            break;
+          }
+          case "session_updated": {
+            res.send({ 
+              data: {
+                value: `Updated: ${new Date(Number(data.updated_at))
+                  .toISOString()
+                  .slice(0, 16)
+                  .replace(/T/, " ")}`
+              }
+            });
+    
+            break;
+          }
+          default: {
+            res.send({});
+          }
+        }
+        /* eslint-enable indent */
+      })
+      .catch( err => console.log(err));
   }
 
   _fetchMessagesInConversation(website_id, session_id, data){
@@ -241,6 +242,7 @@ class ExportChat {
             /* eslint-disable indent */
               case "text": {
                 let txt = `[${messageTime}] ${message.content}`;
+
                 currentMessages = currentMessages.concat("\n", txt);
   
                 break;
@@ -376,6 +378,22 @@ class ExportChat {
   
   }
 
+  _validateRequest(website_id, token){
+    return new Promise ((resolve, reject) => {
+      if (token !== this.websites[website_id].token) { 
+        return reject({
+          error: true,
+          reason: "Invalid token, please try again with a valid token!",
+          data: {
+            website : this.websites[website_id].token,
+            token   : token
+          }
+        });
+      }
+      resolve();
+    });
+  }
+
   _validateDateAndTime(website_id, session_id, time){
     time = time.trim();
 
@@ -489,20 +507,18 @@ class ExportChat {
           );
         } else {
           for(const website of websites){
-            const file_name = website.settings.fileName || "transcript";
-            const website_id = website.settings.websiteId;
-            const session_id = website.settings.sessionId;
-            const nickname = website.settings.nickname;
-            const email = website.settings.email;
+            const file_name    = website.settings.fileName || "transcript";
+            const fnWebsite_id = website.settings.fnWebsiteId;
+            const fnSession_id = website.settings.fnSessionId;
+            const fnNickname   = website.settings.fnNickname;
 
           
             this.websites[website.website_id] = {
               token      : website.token,
               fileName   : file_name, 
-              websiteId  : website_id,
-              sessionId  : session_id,
-              nickname   : nickname,
-              email      : email
+              fnWebsiteId  : fnWebsite_id,
+              fnSessionId  : fnSession_id,
+              fnNickname   : fnNickname
             };
           }
 

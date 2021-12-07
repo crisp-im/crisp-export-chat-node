@@ -4,15 +4,20 @@ html {
   font-family: "Helvetica Neue",Helvetica,Arial,sans-serif
 }
 
-.wrapper {
-  margin: 15%
+
+.filename-example {
+  background-color: #ffffffcc;
+  color: #000000;
+  padding: 2px 20px;
+  border-radius: 4px
 }
 
-img {
-  margin: 0 35%
+#success {
+  color: #007000;
+  background-color: #90ee90;
+  padding: 4px;
 }
 
-
-h1, p {
-  text-align: center;
+.config-wrapper {
+  margin: 2% 0% 0% 35%;
 }

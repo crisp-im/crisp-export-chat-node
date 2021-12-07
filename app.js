@@ -1,8 +1,9 @@
 const express     = require("express");
-const ExportChat  = require("./export_chat");
 const bodyParser  = require("body-parser");
 const path        = require("path");
+const ExportChat  = require("./export_chat");
 
+// Add plugin Urn, API_Identifier and API_Key here: 
 const pluginUrn          = "";
 const crispAPIIdentifier = "";
 const crispAPIKey        = "";
@@ -95,10 +96,9 @@ app.use("/config/update", ((req, res) => {
   const token = req.body.token;
   const data = {
     fileName: req.body.fileName,
-    websiteId : req.body.websiteId,
-    sessionId : req.body.sessionId,
-    nickname  : req.body.nickname,
-    email     : req.body.email,
+    fnWebsiteId : req.body.fnWebsiteId,
+    fnSessionId : req.body.fnSessionId,
+    fnNickname  : req.body.fnNickname
   };
 
   plugin.updateFilenameForTranscript(websiteId, token, data);
@@ -106,7 +106,6 @@ app.use("/config/update", ((req, res) => {
   res.send({});
 }));
 
-// need to complete to fetch setting config first! 
 app.get("/config", (req, res) => {
   plugin.getConfigPage(req.query.website_id, req.query.token, res);
 });
@@ -139,7 +138,11 @@ app.post("/export", (req, res) => {
   }
 });
 
-
+app.get("/success", (req, res) => {
+  res.render("config/success", {
+    pageTitle: "Export plugin installed!"
+  });
+});
 
 app.listen(port, () => {
   console.info(`Listening on Port: ${port}`);
