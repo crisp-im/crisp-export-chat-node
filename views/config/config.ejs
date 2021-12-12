@@ -1,7 +1,5 @@
 <%- include("../includes/head.ejs") %>
-
-    <head>
-        <!-- <link rel="stylesheet" href="/styles/config.css"> -->
+        <link rel="stylesheet" href="/styles/config.css">
         <script>
             function sendConfig() {
                 var _urlParams = new URLSearchParams(window.location.search);
@@ -69,35 +67,52 @@
 
     <body>
 
-        <div class="config-wrapper">
-            <h1> Configure File name here: </h1>
+        <div class="cap-plugin-content-box">
+            <div class="cap-plugin-content-box-head">
+              <h4 class="cap-font-sans-bold">The Export Thread plugin is installed on your website.</h4>
+            </div>
 
-            <p>Filename:
-                <input type="text" name="filename" id="filename" value="<%= filename %>" max="30">
+            <div class="cap-plugin-content-box-inner">
+              <h2 class="cap-font-sans-semibold">Click on the button below to reconfigure the file names.</h2>
+
+              <div class="config-wrapper">
+                <label class="cap-font-sans-semibold">Filename:</label>
+                <input class="cap-font-sans-regular" type="text" name="filename" id="filename" value="<%= filename %>" max="30">
+
+                <label class="cap-font-sans-semibold">Include Website Id: 
+                <input type="checkbox" name="websiteId" id="fnWebsiteId" <%=fnWebsiteId %>></label>
+
+
+                <label class="cap-font-sans-semibold">Incude Session Id: 
+                <input type="checkbox" name="sessionId" id="fnSessionId" <%=fnSessionId %>> </label>
+
+
+                <label class="cap-font-sans-semibold">Incude Nickname: 
+                <input type="checkbox" name="nickname" id="fnNickname" <%=fnNickname %>></label>
                 
-            </p>
-            <p>
-                Include Website Id:
-                <input type="checkbox" name="websiteId" id="fnWebsiteId" <%=fnWebsiteId %>>
-            </p>
-            <p>
-                Include Session Id:
-                <input type="checkbox" name="sessionId" id="fnSessionId" <%=fnSessionId %>>
-            </p>
-            <p>
-                Include Nickname:
-                <input type="checkbox" name="nickname" id="fnNickname" <%=fnNickname %>>
-            </p>
-            <button onclick="sendConfig()">Save configuration</button>
+                <label class="cap-font-sans-semibold">Example: </label>
+                <label class="filename-example" ><%= fnExample %>.txt</label>
 
-            
-            <p><b>Example:</b> <span class="filename-example"> 
-                <%= fnExample %>.txt
-                </span>
-            </p>
-        </div>
+
+                <button class="cap-btn-primary cap-btn-primary-blue-dark cap-btn-small cap-font-sans-semibold" type="submit"onclick="sendConfig()">Save Configuration</button>
+              </div>
+            </div>
+          </div>
+
         
         <p id="success" hidden=""> Settings Saved! </p>
+
+        <div class="cap-plugin-content-box cap-plugin-content-box-yellow">
+            <div class="cap-plugin-content-box-head">
+              <h4 class="cap-font-sans-bold">How does the Export Thread plugin?</h4>
+            </div>
+
+            <div class="cap-plugin-content-box-inner">
+              <p class="cap-font-sans-regular"><strong class="cap-font-sans-semibold">The Export Thread plugin enables the ability to send a conversation thread to your visitor as a text file</strong>. It is possible for your operators to select a date and time to specify a range of conversation messages which should be included in the transcript. </p>
+
+              <p class="cap-font-sans-regular">In this configuration page, you can set what the file name of thread will be. Please enter a prefix name such as "transcript" or your company name, then select the website_id, session_id or visitors name. You can see the example above of what the file will be named! </a></p>
+            </div>
+          </div>
     </body>
 
     <%- include("../includes/footer.ejs") %>

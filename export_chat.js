@@ -17,8 +17,9 @@ class ExportChat {
     this._initPlugin();
   }
 
+  // Display the config page. 
   getConfigPage(websiteId, token, res){
-    this._validateRequest(websiteId, token)
+    this._validateTokens(websiteId, token)
       .then(() => {
         // fn = filename 
         let filename    = this.websites[websiteId].fileName;
@@ -47,11 +48,11 @@ class ExportChat {
         });
       })
       .catch(err => console.log(err));
-
   }
 
+  // Update the format of the filename when sending the transcript
   updateFilenameForTranscript(websiteId, token, data) {
-    this._validateRequest(websiteId, token)
+    this._validateTokens(websiteId, token)
       .then(() => {
         const settings = {
           fileName   : data.fileName,
@@ -83,44 +84,54 @@ class ExportChat {
       });
   }
 
+  // Get conversation between two specified dates and/or time
   getConversationBetween(website_id, session_id, data){
     const token           = data.token;
 
-    this._validateRequest(website_id, token)
+    this._validateTokens(website_id, token)
       .then(() => {
+        // valid start date and time when messages should be sent from
         if(!data.messagesFrom){
+          const error = {
+            reason: "Action requires a 'message from' date!",
+            data  : { 
+              "messagesFrom": data.messagesFrom
+            }
+          };
           const message = `
             Please insert a valid time and date of when you would like to export 
             messages from. \n\n If you would like to export all messages in this 
             Conversation, please select **"Send Entire Conversation"** . 
             `;
     
-          this._sendErrorNote(website_id, session_id, message);
-    
-          return {
-            "error": true,
-            "reason": "Action requires a 'message from' date!",
-            "data": {
-              "messageFrom": data.messagesFrom
-            }
-          };
+          return this._sendErrorNote(website_id, session_id, message, error);
         }
         if(new Date(data.messagesFrom).getTime() < Number(data.created_at)-60000){
+          const error = {
+            reason: "Date should be equal or after creation date"
+          };
+
           const message = `The ** "Messages From" **  date should not be set before this
             conversation was created!\n\n Please enter a valid date!`;
-          return this._sendErrorNote(website_id, session_id, message);
+
+          return this._sendErrorNote(website_id, session_id, message, error);
         }
+
         return this._validateDateAndTime(website_id, session_id, data.messagesFrom);
       })
       .then(message_from_timestamp => {
         data.messagesFrom = message_from_timestamp;
-
+        // validate end date and time of when messages should be sent from
         if(data.messagesTo){
-          // if(new Date(data.messagesTo).getTime() > Number(data.updated_at)){
-          //   const message = `The ** "Messages To" ** date should not be set after the 
-          //     last time this conversation was updated!\n\n Please enter a valid date!`;
-          //   return this._sendErrorNote(website_id, session_id, message);
-          // }
+          if(new Date(data.messagesTo).getTime() > Number(data.updated_at)){
+            const error = {
+              reason: "Date should not be after conversation was last updated"
+            };
+            const message = `The ** "Messages To" ** date should not be set after the 
+              last time this conversation was updated!\n\n Please enter a valid date!`;
+
+            return this._sendErrorNote(website_id, session_id, message, error);
+          }
           
           return this._validateDateAndTime(
             website_id, 
@@ -139,7 +150,7 @@ class ExportChat {
   getFullConversation(website_id, session_id, data){
     const token           = data.token;
 
-    this._validateRequest(website_id, token)
+    this._validateTokens(website_id, token)
       .then(() => {
         this._fetchMessagesInConversation(website_id, session_id, data);
       })
@@ -148,8 +159,9 @@ class ExportChat {
       });
   }
 
+  // Covnert timestamp from Unix to Date string 
   convertTimestamp(website_id, data, res){
-    this._validateRequest(website_id, data.token)
+    this._validateTokens(website_id, data.token)
       .then(() => {
         /* eslint-disable indent */
         switch (data.item_id){
@@ -198,10 +210,14 @@ class ExportChat {
 
     message_from                  = new Date(message_from).getTime();
     
+    // If a 'messages to' date is set, then use it as the first 
+    // timestamp to get messages, otherwise use current time and date.
     if(message_to){
       toDate = new Date(message_to).getTime();
     }
 
+    // Function to get messages by page, then append messages to the
+    // 'fullConversationMessages' variable.
     (function getMessagePages(timestamp, lastMessageFrom){
       self.crispClient.website.getMessagesInConversation(
         website_id, 
@@ -325,7 +341,6 @@ class ExportChat {
             let pathParam1 = "";
             let pathParam2 = "";
             let pathParam3 = "";
-            let pathParam4 = "";
             let fullPath   = "";
             let   txtFileTitle = `Conversation with ${visitor_nickname}`;
             const fileName = self.websites[website_id].fileName;
@@ -340,20 +355,17 @@ class ExportChat {
             );
             
 
-            if(self.websites[website_id].websiteId){
+            if(self.websites[website_id].fnWebsiteId){
               pathParam1 = `_${website_id}`;
             } 
-            if(self.websites[website_id].sessionId){
+            if(self.websites[website_id].fnSessionId){
               pathParam2 = `_${session_id}`;
             } 
-            if(self.websites[website_id].nickname){
+            if(self.websites[website_id].fnNickname){
               pathParam3 = `_${visitor_nickname}`;
             } 
-            if(self.websites[website_id].email && visitor_email){
-              pathParam4 = `_${visitor_email}`;
-            } 
 
-            fullPath = `${fileName}${pathParam1}${pathParam2}${pathParam3}${pathParam4}`;
+            fullPath = `${fileName}${pathParam1}${pathParam2}${pathParam3}`;
   
             return fs.promises.writeFile(
               `${path.join(__dirname)}/tmp/${fullPath}.txt`, 
@@ -375,10 +387,9 @@ class ExportChat {
         })
         .catch(err => console.log(err));
     })(toDate);
-  
   }
 
-  _validateRequest(website_id, token){
+  _validateTokens(website_id, token){
     return new Promise ((resolve, reject) => {
       if (token !== this.websites[website_id].token) { 
         return reject({
@@ -394,69 +405,81 @@ class ExportChat {
     });
   }
 
+  // Validate time and date sent by operator is
+  // in a correct format. 
   _validateDateAndTime(website_id, session_id, time){
     time = time.trim();
 
-    return new Promise(
-      (resolve, reject) => {
-        const message = `
-        Please insert a valid time and date of when you would like to export
-        messages from and/or to, such as;
-          * **yyyy-mm-dd** eg. "2016-11-25"
-          * **yyyy-mm-dd hh:mm** eg. "2016-11-25 12:10" \n\n
-        `;
+    const message = `
+    Please insert a valid time and date of when you would like to export
+    messages from and/or to, such as;
+      * **yyyy-mm-dd** eg. "2016-11-25"
+      * **yyyy-mm-dd hh:mm** eg. "2016-11-25 12:10" \n\n
+    `;
 
-        /* eslint-disable indent */
-        switch(time.length){
-          case 10: {
-            const dateRegYear = /[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])/;
-      
-            if(!time.match(dateRegYear)){
-              this._sendErrorNote(website_id, session_id, message);
-      
-              return reject("Date format must be 'yyyy-mm-dd'");
-            }
-      
-            return resolve(time);
-          }
-          case 16: {
-            const dateRegYearDate = /[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1]) (2[0-3]|[01][0-9]):[0-5][0-9]/;
-      
-            if(!time.match(dateRegYearDate)){
-              this._sendErrorNote(website_id, session_id, message);
-      
-              return reject("Date and time format must be 'yyyy-mm-dd hh:mm' ");
-            }
-      
-            return resolve(time);
-          }
-          default: {
-            this._sendErrorNote(website_id, session_id, message);
-    
-            return reject("Date format must be a length of 10 or 16 characters only!");
-          }
-          
+    /* eslint-disable indent */
+    switch(time.length){
+      case 10: {
+        const dateRegYear = /[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])/;
+  
+        if(!time.match(dateRegYear)){
+          const error = {
+            reason: "Date format must be 'yyyy-mm-dd'"
+          };
+
+          return this._sendErrorNote(website_id, session_id, message, error);
         }
-        /* eslint-enable indent */
+  
+        break;
       }
-    );
+      case 16: {
+        const dateRegYearDate = /[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1]) (2[0-3]|[01][0-9]):[0-5][0-9]/;
+  
+        if(!time.match(dateRegYearDate)){
+          const error = {
+            reason: "Date and time format must be 'yyyy-mm-dd hh:mm' "
+          };
+
+          return this._sendErrorNote(website_id, session_id, message, error);
+        }
+  
+        break;
+      }
+      default: {
+        const error = {
+          reason: "Date format must be a length of 10 or 16 characters only!"
+        };
+
+        return this._sendErrorNote(website_id, session_id, message, error);
+      }
+      
+    }
+        /* eslint-enable indent */
   }
 
-  _sendErrorNote(website_id, session_id, error_message){
-    const message = {
-      "type"    : "note",
-      "from"    : "operator",
-      "origin"  : "chat",
-      "content" : error_message,
-      "user"    : {
-        "type"    : "website",
-        "nickname": "Export Transcript Plugin",
-        "avatar"  : "https://storage.crisp.chat/users/avatar/website/754190078c1a2c00/crisp_64lksp.png"
-      }
-    };
-
-    this.crispClient.website.sendMessageInConversation(website_id, session_id, message)
-      .catch(err => console.log(err));
+  _sendErrorNote(website_id, session_id, error_message, error){
+    return new Promise((resolve, reject) => {
+      const message = {
+        "type"    : "note",
+        "from"    : "operator",
+        "origin"  : "chat",
+        "content" : error_message,
+        "user"    : {
+          "type"    : "website",
+          "nickname": "Export Transcript Plugin",
+          "avatar"  : "https://storage.crisp.chat/users/avatar/website/754190078c1a2c00/crisp_64lksp.png"
+        }
+      };
+  
+      this.crispClient.website.sendMessageInConversation(website_id, session_id, message)
+        .catch(err => console.log(err));
+      
+      reject({
+        "error": true,
+        "reason": error.reason,
+        "data": error.data
+      });
+    });
   }
 
   _createUploadBucket(website_id, session_id, fileName){
@@ -487,6 +510,7 @@ class ExportChat {
       "plugin", this.crispAPIIdentifier, this.crispAPIKey
     );
 
+    // get pluginId for later use.
     this.crispClient.plugin.getConnectAccount()
       .then(response => {
         this._pluginId = response.plugin_id;
@@ -496,7 +520,10 @@ class ExportChat {
       .catch(err => {
         console.error(err);
       });
-
+    // Retrieve all websites connected to this plugin.
+    // Notice #1: we only retrieve the first page there, you should implement \
+    //   paging to the end, in a real-world situation.
+    // Notice #2: return configured + non-configured plugins altogether.
     this.crispClient.plugin.listAllConnectWebsites(1, false)
       .then(websites => {
         let numWebsites = (websites || []).length;

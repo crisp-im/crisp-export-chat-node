@@ -4,9 +4,9 @@ const path        = require("path");
 const ExportChat  = require("./export_chat");
 
 // Add plugin Urn, API_Identifier and API_Key here: 
-const pluginUrn          = "";
-const crispAPIIdentifier = "";
-const crispAPIKey        = "";
+const pluginUrn          = "urn:dinis.tavares:export-thread:0";
+const crispAPIIdentifier = "9c4fe5fa-c381-48ab-b640-83bb5ddd485e";
+const crispAPIKey        = "b7282735914f3f033cf4635294d5e18ae09231fd7b5c90fb218c33339c4eb5ff";
 
 const app   = express();
 const port  = 1234;
@@ -51,6 +51,8 @@ const handleSubmitButtonAction = (body, res) => {
   };
   
   plugin.getConversationBetween(website_id, session_id, data);
+
+  // return res.sendStatus(409);
   
   return res.send({});
 };

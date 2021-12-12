@@ -1,6 +1,6 @@
 # Crisp Plugin Generic Widget (Node.js)
 
-This is an example plugin of how to use Crisp Widgets. 
+This is an example plugin using the Crisp Widgets. 
 
 The purpose of this plugin is to export a conversation session and send it to the user in a plain text file. The operator will also be able specify a date range of messages that should be sent in the text file. 
 
@@ -14,7 +14,7 @@ In order to use widgets, you will need to publish your plugin, and you will need
 2. Create a plugin in the Marketplace. (Add the plugin URN in `./app.js` > `pluginUrn` URN example: `"urn:my.account:pluginname:0"`)
 3. Give your plugin a name and description.
 4. In the Marketplace go to the **Tokens** tab of your plugin.
-5. Select **Ask a Production Token** and define the scopes you will need. Please add a description as to why you need these scopes or they will be rejected. The tokens you will need for the project are:
+5. Select **Ask a Production Token** and define the scopes you will need. Please add a description as to why you need these scopes or they will be rejected. The scopes you will need for the project are:
   * **Namespace**: `bucket:url`                     **Description**: You will need this to create upload links to upload and send files in Crisp.
   * **Namespace**: `website:conversation:sessions`  **Description**: To get the session `created_at` and `updated_at` dates, along with the user's nickname and email.
   * **Namespace**: `website:conversation:messages`  **Description**: To get all messages from a conversation, and send the transcript text file to the conversation. 
