@@ -44,9 +44,9 @@ In order to use widgets, you will need to publish your plugin, and you will need
 2. You should now see in your terminal: `Now listening for events...`. 
 3. Configure the file name: Go in [Crisp](https://app.crisp.chat) > Plugins > Installed Plugins > Export Thread (or plugin name if changed) > Configure the Plugin. You will be redirected to a new page, where you can save the file name configuration. Edit the configureation and click "Save configuration".
 3. In your Crisp inbox, open an existing conversation. In the wigets panel on the right hand side, go to Export Thread (or new plugin name):
-    * Click send entrie conversation to send all messages in that session. (Hook button item expample.)
-    * Enter a "Messages from" date to specify the from which date messages should be included, click "Messages from selected dates". (Data Item and Submit button item examples.)
-    * Enter a "Messages From" and a "Messages to" date to specify an exact date range when messages should be included. (Data Item and Submit button item examples.)
-    * Click "Open Profile" to demo opening an internal CRM profile directly in Crisp. (Modal button item example.)
-    * Click "Open Link to Profile" to demo opening an interanl CRM profile in a seperate tab. (Link button item example.)
+    * Click send entrie conversation to send all messages in that session. ([Hook button](https://docs.crisp.chat/guides/plugins/widgets/generic-widget/) item example.)
+    * Enter a "Messages from" date to specify the from which date messages should be included, click "Messages from selected dates". ([Data Item and Submit button](https://docs.crisp.chat/guides/plugins/widgets/generic-widget/) item examples.)
+    * Enter a "Messages From" and a "Messages to" date to specify an exact date range when messages should be included. ([Data Item and Submit button](https://docs.crisp.chat/guides/plugins/widgets/generic-widget/) item examples.)
+    * Click "Open Profile" to demo opening an internal CRM profile directly in Crisp. ([Modal button](https://docs.crisp.chat/guides/plugins/widgets/generic-widget/) item example.)
+    * Click "Open Link to Profile" to demo opening an interanl CRM profile in a seperate tab. ([Link button](https://docs.crisp.chat/guides/plugins/widgets/generic-widget/) item example.)
 
