@@ -15,12 +15,14 @@
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        "website_id": _urlParams.get("website_id"),
-                        "token": _urlParams.get("token"),
-                        "fileName": _filename.value,
+                        "origin"     : {
+                            "website_id": _urlParams.get("website_id"),
+                            "token"     : _urlParams.get("token"),
+                        },
+                        "fileName"   : _filename.value,
                         "fnWebsiteId": _fnWebsiteId.checked,
                         "fnSessionId": _fnSessionId.checked,
-                        "fnNickname": _fnNickname.checked
+                        "fnNickname" : _fnNickname.checked
                     })
                 }).then(() => {
                     console.log("worked");
