@@ -4,9 +4,9 @@
             function sendConfig() {
                 var _urlParams = new URLSearchParams(window.location.search);
                 _filename = document.getElementById("filename");
-                _fnWebsiteId = document.getElementById("fnWebsiteId");
-                _fnSessionId = document.getElementById("fnSessionId");
-                _fnNickname = document.getElementById("fnNickname");
+                _selectedWebsiteId = document.getElementById("selectedWebsiteId");
+                _selectedSessionId = document.getElementById("selectedSessionId");
+                _selectedNickname  = document.getElementById("selectedNickname");
 
                 console.log(window.location.search);
                 fetch(window.location.origin + "/config/update", {
@@ -20,9 +20,9 @@
                             "token"     : _urlParams.get("token"),
                         },
                         "fileName"   : _filename.value,
-                        "fnWebsiteId": _fnWebsiteId.checked,
-                        "fnSessionId": _fnSessionId.checked,
-                        "fnNickname" : _fnNickname.checked
+                        "selectedWebsiteId": _selectedWebsiteId.checked,
+                        "selectedSessionId": _selectedSessionId.checked,
+                        "selectedNickname" : _selectedNickname.checked
                     })
                 }).then(() => {
                     console.log("worked");
@@ -38,30 +38,30 @@
             document.addEventListener("DOMContentLoaded", function () {
                 var _urlParams = new URLSearchParams(window.location.search);
                 _filename = document.getElementById("filename");
-                _fnWebsiteId = document.getElementById("fnWebsiteId");
-                _fnSessionId = document.getElementById("fnSessionId");
-                _fnNickname = document.getElementById("fnNickname");
+                _selectedWebsiteId = document.getElementById("selectedWebsiteId");
+                _selectedSessionId = document.getElementById("selectedSessionId");
+                _selectedNickname  = document.getElementById("selectedNickname");
                 _websiteId = _urlParams.get("website_id");
                 let example = document.querySelector(".filename-example")
 
                 function handleFilename() {
                     let updatedFilename = _filename.value;
 
-                    if (_fnWebsiteId.checked) {
+                    if (_selectedWebsiteId.checked) {
                         updatedFilename = `${updatedFilename}_${_websiteId}`;
                     }
-                    if (_fnSessionId.checked) {
+                    if (_selectedSessionId.checked) {
                         updatedFilename = `${updatedFilename}_session_bbf82712-2602-468e-9c51-af054aaee873`;
                     }
-                    if (_fnNickname.checked) {
+                    if (_selectedNickname.checked) {
                         updatedFilename = `${updatedFilename}_John Doe`;
                     }
                     example.innerHTML = `${updatedFilename}.txt`;
                 }
                 _filename.addEventListener("keyup", handleFilename);
-                _fnWebsiteId.addEventListener("click", handleFilename);
-                _fnSessionId.addEventListener("click", handleFilename);
-                _fnNickname.addEventListener("click", handleFilename);
+                _selectedWebsiteId.addEventListener("click", handleFilename);
+                _selectedSessionId.addEventListener("click", handleFilename);
+                _selectedNickname.addEventListener("click", handleFilename);
 
             });
         </script>
@@ -82,18 +82,18 @@
                 <input class="cap-font-sans-regular" type="text" name="filename" id="filename" value="<%= filename %>" max="30">
 
                 <label class="cap-font-sans-semibold">Include Website Id: 
-                <input type="checkbox" name="websiteId" id="fnWebsiteId" <%=fnWebsiteId %>></label>
+                <input type="checkbox" name="websiteId" id="selectedWebsiteId" <%=selectedWebsiteId %>></label>
 
 
                 <label class="cap-font-sans-semibold">Incude Session Id : 
-                <input type="checkbox" name="sessionId" id="fnSessionId" <%=fnSessionId %>> </label>
+                <input type="checkbox" name="sessionId" id="selectedSessionId" <%=selectedSessionId %>> </label>
 
 
                 <label class="cap-font-sans-semibold">Incude Nickname :  
-                <input type="checkbox" name="nickname" id="fnNickname" <%=fnNickname %>></label>
+                <input type="checkbox" name="nickname" id="selectedNickname" <%=selectedNickname %>></label>
                 
                 <label class="cap-font-sans-semibold">Example: </label>
-                <label class="filename-example" ><%= fnExample %>.txt</label>
+                <label class="filename-example" ><%= selectedExample %>.txt</label>
 
 
                 <button class="cap-btn-primary cap-btn-primary-blue-dark cap-btn-small cap-font-sans-semibold" type="submit"onclick="sendConfig()">Save Configuration</button>

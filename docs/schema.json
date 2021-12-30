@@ -1,18 +1,18 @@
 {
-  "$id": "crisp:service:api/_schema/plugin#urn:my.account:pluginname:0",
-  "type": "object",
-  "properties": {
-    "fileName": {
-      "type": "string"
-    },
-    "websiteId": {
-      "type": "boolean"
-    },
-    "sessionId": {
-      "type": "boolean"
-    },
-    "nickname": {
-      "type": "boolean"
-    }
-  }
+	"$id": "crisp:service:api/_schema/plugin#urn:dinis.tavares:export-thread:0",
+	"type": "object",
+	"properties": {
+		"fileName": {
+			"type": "string"
+		},
+		"selectedWebsiteId": {
+			"type": "boolean"
+		},
+		"selectedSessionId": {
+			"type": "boolean"
+		},
+		"selectedNickname": {
+			"type": "boolean"
+		}
+	}
 }
