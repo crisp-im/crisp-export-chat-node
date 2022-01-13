@@ -32,7 +32,7 @@ In order to use widgets, you will need to publish your plugin, and you will need
 
     * Add your custom settings Schema. In this example you will use the schema provided at `./docs/schema.json`, please change the URN to match your plugin. 
     * Add your custom Widget Schema. In this example you will use the schema provided at `./docs/widget.json`.
-        * Edit your widget urls for `widget.sections.items.open_contact.url` && `widget.sections.items.open_contact_new_tab.url` with the correct ngrok endpoint, leaving the same routes.
+        * Edit your widget urls for `widget.sections[0].items[3].value.url` && `widget.sections[0].items[4].value.url` with the correct ngrok endpoint, leaving the same routes.
             * eg. `https://698e-79-168-37-128.ngrok.io/profile`
 
     * Scroll to the **Danger Zone**. Click **publish plugin**. Note: even Private plugins must be published to use widgets, they will not be visible to the public.

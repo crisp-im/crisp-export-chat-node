@@ -56,7 +56,6 @@
 						"url": "https://698e-79-168-37-128.ngrok.io/profile",
 						"color": "blue",
 						"size": "wide",
-						"controls": false,
 						"data": {
 							"people_id": "{conversation.people_id}",
 							"email": "{conversation.meta.email}",
